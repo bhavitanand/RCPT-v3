@@ -43,24 +43,23 @@ function App() {
   };
 
   return (
-    <div className="flex h-screen bg-slate-950">
+    <div className="flex h-screen bg-bg">
 
-      <div className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col">
+      {/* Sidebar */}
+      <div className="w-64 bg-card border-r border-border flex flex-col">
 
-        <div className="p-6 border-b border-slate-800 text-center">
+        {/* Logo / Title */}
+        <div className="p-6 border-b border-border text-center">
           <div className="flex justify-center mb-2">
-            <Shield className="w-6 h-6 text-cyan-400" />
+            <Shield className="w-6 h-6 text-primary" />
           </div>
 
-          <h1 className="text-base font-bold text-cyan-400">
+          <h1 className="text-base font-bold text-primary">
             Ransomware Crypto Payments Tracker
           </h1>
-
-          {/* <p className="text-xs text-gray-400 mt-1">
-            Ransomware Crypto Payment Tracker
-          </p> */}
         </div>
 
+        {/* Navigation */}
         <nav className="flex-1 p-4">
           {navigationItems.map((item) => (
             <button
@@ -68,8 +67,8 @@ function App() {
               onClick={() => setCurrentPage(item.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 mb-2 rounded-lg transition-all ${
                 currentPage === item.id
-                  ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
-                  : 'text-slate-400 hover:bg-slate-800 hover:text-slate-300'
+                  ? 'bg-[#1a1a1a] text-primary border border-border'
+                  : 'text-secondary hover:bg-[#1a1a1a] hover:text-primary'
               }`}
             >
               <item.icon className="w-5 h-5" />
@@ -78,20 +77,23 @@ function App() {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-slate-800">
-          <div className="text-xs text-slate-500">
+        {/* Footer Status */}
+        <div className="p-4 border-t border-border">
+          <div className="text-xs text-secondary">
             <div className="flex justify-between mb-1">
               <span>Status</span>
-              <span className="text-green-400">● Online</span>
+              <span className="text-success">● Online</span>
             </div>
             <div className="flex justify-between">
               <span>API</span>
-              <span className="text-cyan-400">localhost:5000</span>
+              <span className="text-primary">localhost:5000</span>
             </div>
           </div>
         </div>
+
       </div>
 
+      {/* Main Content */}
       <div className="flex-1 overflow-auto">
         {renderPage()}
       </div>

@@ -48,9 +48,9 @@ export default function Dashboard({ walletData, setWalletData, searchedAddress, 
   };
 
   const getRiskLevel = (score: number): { label: string; color: string } => {
-    if (score <= 30) return { label: 'Low Risk', color: 'text-green-400' };
-    if (score <= 60) return { label: 'Medium Risk', color: 'text-yellow-400' };
-    return { label: 'High Risk', color: 'text-red-400' };
+    if (score <= 30) return { label: 'Low Risk', color: 'text-success' };
+    if (score <= 60) return { label: 'Medium Risk', color: 'text-warning' };
+    return { label: 'High Risk', color: 'text-danger' };
   };
 
   const generateInsights = (data: WalletData): string[] => {
@@ -103,10 +103,10 @@ export default function Dashboard({ walletData, setWalletData, searchedAddress, 
 
   const getSeverityColor = (severity: string): string => {
     switch (severity) {
-      case 'HIGH': return 'bg-red-500/20 text-red-400 border-red-500/30';
-      case 'MEDIUM': return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
-      case 'LOW': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
-      default: return 'bg-slate-500/20 text-slate-400 border-slate-500/30';
+      case 'HIGH': return 'bg-danger/20 text-danger border-danger/30';
+      case 'MEDIUM': return 'bg-warning/20 text-warning border-warning/30';
+      case 'LOW': return 'bg-secondary/20 text-secondary border-secondary/30';
+      default: return 'bg-border/20 text-secondary border-border/30';
     }
   };
 
@@ -115,13 +115,14 @@ export default function Dashboard({ walletData, setWalletData, searchedAddress, 
 
   return (
     <div className="p-8">
+
       <div className="mb-8">
-        <h2 className="text-3xl font-bold text-slate-100 mb-2">Investigation Dashboard</h2>
-        <p className="text-slate-400">Blockchain forensics and ransomware payment tracking</p>
+        <h2 className="text-3xl font-bold text-primary mb-2">Investigation Dashboard</h2>
+        <p className="text-secondary">Blockchain forensics and ransomware payment tracking</p>
       </div>
 
-      <div className="bg-slate-900 rounded-lg border border-slate-800 p-6 mb-6">
-        <label className="block text-sm font-medium text-slate-300 mb-3">Wallet Address</label>
+      <div className="bg-card rounded-lg border border-border p-6 mb-6">
+        <label className="block text-sm font-medium text-secondary mb-3">Wallet Address</label>
         <div className="flex gap-3">
           <input
             type="text"
@@ -129,12 +130,12 @@ export default function Dashboard({ walletData, setWalletData, searchedAddress, 
             onChange={(e) => setAddress(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
             placeholder="Enter wallet address (e.g., 0x123...)"
-            className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+            className="flex-1 bg-[#1a1a1a] border border-border rounded-lg px-4 py-3 text-primary placeholder-secondary focus:outline-none focus:border-border"
           />
           <button
             onClick={handleSearch}
             disabled={loading}
-            className="bg-cyan-500 hover:bg-cyan-600 disabled:bg-slate-700 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors"
+            className="bg-primary text-black px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors hover:bg-gray-300 disabled:bg-border"
           >
             {loading ? (
               <>
@@ -150,7 +151,7 @@ export default function Dashboard({ walletData, setWalletData, searchedAddress, 
           </button>
         </div>
         {error && (
-          <div className="mt-3 text-red-400 text-sm flex items-center gap-2">
+          <div className="mt-3 text-danger text-sm flex items-center gap-2">
             <AlertCircle className="w-4 h-4" />
             {error}
           </div>
@@ -159,87 +160,78 @@ export default function Dashboard({ walletData, setWalletData, searchedAddress, 
 
       {!walletData && !loading && (
         <div className="text-center py-20">
-          <Search className="w-16 h-16 text-slate-700 mx-auto mb-4" />
-          <h3 className="text-xl font-medium text-slate-400 mb-2">Enter a wallet address to begin analysis</h3>
-          <p className="text-slate-500">Investigate blockchain transactions and detect suspicious patterns</p>
+          <Search className="w-16 h-16 text-secondary mx-auto mb-4" />
+          <h3 className="text-xl font-medium text-secondary mb-2">Enter a wallet address to begin analysis</h3>
+          <p className="text-secondary">Investigate blockchain transactions and detect suspicious patterns</p>
         </div>
       )}
 
       {walletData && (
         <div className="space-y-6">
+
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-slate-900 rounded-lg border border-slate-800 p-6">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-slate-400 text-sm font-medium">Risk Score</span>
-              </div>
-              <div className={`text-4xl font-bold ${riskLevel.color} mb-2`}>{riskScore}</div>
-              <div className="flex items-center gap-2">
-                <div className={`px-2 py-1 rounded text-xs font-medium ${riskLevel.color} bg-current bg-opacity-10`}>
-                  {riskLevel.label}
-                </div>
-              </div>
+
+            <div className="bg-card rounded-lg border border-border p-6">
+              <span className="text-secondary text-sm font-medium">Risk Score</span>
+              <div className={`text-4xl font-bold ${riskLevel.color} mt-2`}>{riskScore}</div>
+              <div className="mt-2 text-xs">{riskLevel.label}</div>
             </div>
 
-            <div className="bg-slate-900 rounded-lg border border-slate-800 p-6">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-slate-400 text-sm font-medium">Total Sent</span>
-                <TrendingDown className="w-5 h-5 text-orange-400" />
-              </div>
-              <div className="text-3xl font-bold text-orange-400">{walletData.stats.totalSent.toFixed(4)}</div>
-              <div className="text-xs text-slate-500 mt-1">ETH</div>
+            <div className="bg-card rounded-lg border border-border p-6">
+              <span className="text-secondary text-sm font-medium">Total Sent</span>
+              <div className="text-3xl font-bold text-warning mt-2">{walletData.stats.totalSent.toFixed(4)}</div>
+              <div className="text-xs text-secondary mt-1">ETH</div>
             </div>
 
-            <div className="bg-slate-900 rounded-lg border border-slate-800 p-6">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-slate-400 text-sm font-medium">Total Received</span>
-                <TrendingUp className="w-5 h-5 text-green-400" />
-              </div>
-              <div className="text-3xl font-bold text-green-400">{walletData.stats.totalReceived.toFixed(4)}</div>
-              <div className="text-xs text-slate-500 mt-1">ETH</div>
+            <div className="bg-card rounded-lg border border-border p-6">
+              <span className="text-secondary text-sm font-medium">Total Received</span>
+              <div className="text-3xl font-bold text-success mt-2">{walletData.stats.totalReceived.toFixed(4)}</div>
+              <div className="text-xs text-secondary mt-1">ETH</div>
             </div>
 
-            <div className="bg-slate-900 rounded-lg border border-slate-800 p-6">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-slate-400 text-sm font-medium">Transaction Count</span>
-                <Activity className="w-5 h-5 text-cyan-400" />
-              </div>
-              <div className="text-3xl font-bold text-cyan-400">{walletData.stats.txCount}</div>
-              <div className="text-xs text-slate-500 mt-1">Total transactions</div>
+            <div className="bg-card rounded-lg border border-border p-6">
+              <span className="text-secondary text-sm font-medium">Transaction Count</span>
+              <div className="text-3xl font-bold text-primary mt-2">{walletData.stats.txCount}</div>
+              <div className="text-xs text-secondary mt-1">Total transactions</div>
             </div>
+
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-slate-900 rounded-lg border border-slate-800 p-6">
-              <h3 className="text-lg font-semibold text-slate-100 mb-4">Investigation Insights</h3>
+
+            <div className="bg-card rounded-lg border border-border p-6">
+              <h3 className="text-lg font-semibold text-primary mb-4">Investigation Insights</h3>
               <div className="space-y-3">
                 {generateInsights(walletData).map((insight, index) => (
-                  <div key={index} className="flex items-start gap-3 text-slate-300">
-                    <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 mt-2" />
+                  <div key={index} className="flex items-start gap-3 text-secondary">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
                     <span className="text-sm">{insight}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="bg-slate-900 rounded-lg border border-slate-800 p-6">
-              <h3 className="text-lg font-semibold text-slate-100 mb-4">Suspicious Activity</h3>
+            <div className="bg-card rounded-lg border border-border p-6">
+              <h3 className="text-lg font-semibold text-primary mb-4">Suspicious Activity</h3>
+
               {walletData.flags.length === 0 ? (
-                <p className="text-slate-500 text-sm">No suspicious activity detected</p>
+                <p className="text-secondary text-sm">No suspicious activity detected</p>
               ) : (
                 <div className="space-y-3">
                   {groupFlags(walletData.flags).map((flag, index) => (
                     <div key={index} className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <AlertCircle className="w-5 h-5 text-red-400" />
+                        <AlertCircle className="w-5 h-5 text-danger" />
                         <div>
-                          <div className="text-sm font-medium text-slate-200 capitalize">
+                          <div className="text-sm font-medium text-primary capitalize">
                             {flag.type} detected
                           </div>
-                          <div className="text-xs text-slate-500">
+                          <div className="text-xs text-secondary">
                             {flag.count} occurrence{flag.count > 1 ? 's' : ''}
                           </div>
                         </div>
                       </div>
+
                       <div className={`px-3 py-1 rounded border text-xs font-medium ${getSeverityColor(flag.severity)}`}>
                         {flag.severity}
                       </div>
@@ -247,8 +239,11 @@ export default function Dashboard({ walletData, setWalletData, searchedAddress, 
                   ))}
                 </div>
               )}
+
             </div>
+
           </div>
+
         </div>
       )}
     </div>
