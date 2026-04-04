@@ -66,7 +66,7 @@ export default function Dashboard({
     setLoading(true);
     setError('');
     try {
-      const response = await axios.get<WalletData>(`http://localhost:5000/wallet/${address}`);
+      const response = await axios.get<WalletData>(`${import.meta.env.VITE_API_URL}/wallet/${address}`);
       setWalletData(response.data);
       setSearchedAddress(address);
     } catch {

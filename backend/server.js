@@ -1,3 +1,4 @@
+const rateLimit = require('express-rate-limit')
 const express = require("express");
 const axios   = require("axios");
 const cors    = require("cors");
@@ -7,6 +8,7 @@ const detectAll = require("./detection");
 
 const app = express();
 app.use(cors({ origin: "*" }));
+app.use(rateLimit({ windowMs: 60 * 1000, max: 20 }))
 
 const PORT = process.env.PORT || 5000;
 
