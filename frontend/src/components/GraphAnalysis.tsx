@@ -52,16 +52,16 @@ export default function GraphAnalysis({ walletData, searchedAddress }: GraphAnal
         {
           selector: 'node',
           style: {
-            'background-color': '#475569',
+            'background-color': '#1a1a1a',
             'label': 'data(id)',
-            'color': '#cbd5e1',
+            'color': '#ffffff',
             'font-size': '10px',
             'text-valign': 'center',
             'text-halign': 'center',
             'width': '40px',
             'height': '40px',
             'border-width': '2px',
-            'border-color': '#64748b',
+            'border-color': '#555555',
             'text-wrap': 'ellipsis',
             'text-max-width': '60px'
           }
@@ -69,9 +69,10 @@ export default function GraphAnalysis({ walletData, searchedAddress }: GraphAnal
         {
           selector: 'node.target',
           style: {
-            'background-color': '#06b6d4',
-            'border-color': '#22d3ee',
+            'background-color': '#ffffff',
+            'border-color': '#cccccc',
             'border-width': '3px',
+            'color': '#000000',
             'width': '50px',
             'height': '50px'
           }
@@ -81,14 +82,16 @@ export default function GraphAnalysis({ walletData, searchedAddress }: GraphAnal
           style: {
             'background-color': '#dc2626',
             'border-color': '#ef4444',
-            'border-width': '3px'
+            'border-width': '3px',
+            'color': '#ffffff'
           }
         },
         {
           selector: 'node.normal',
           style: {
-            'background-color': '#475569',
-            'border-color': '#64748b'
+            'background-color': '#1a1a1a',
+            'border-color': '#555555',
+            'color': '#dddddd'
           }
         },
         {
@@ -98,8 +101,8 @@ export default function GraphAnalysis({ walletData, searchedAddress }: GraphAnal
               const amount = ele.data('amount') || 0;
               return Math.max(1, Math.min(amount * 2, 10));
             },
-            'line-color': '#334155',
-            'target-arrow-color': '#334155',
+            'line-color': '#555555',
+            'target-arrow-color': '#888888',
             'target-arrow-shape': 'triangle',
             'curve-style': 'bezier',
             'arrow-scale': 1.5
@@ -135,52 +138,64 @@ export default function GraphAnalysis({ walletData, searchedAddress }: GraphAnal
     return (
       <div className="p-8">
         <div className="text-center py-20">
-          <Network className="w-16 h-16 text-slate-700 mx-auto mb-4" />
-          <h3 className="text-xl font-medium text-slate-400 mb-2">No wallet data to visualize</h3>
-          <p className="text-slate-500">Search for a wallet address in the Dashboard to view its transaction graph</p>
+          <Network className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+          <h3 className="text-xl font-medium text-gray-300 mb-2">No wallet data to visualize</h3>
+          <p className="text-gray-500">Search for a wallet address in the Dashboard to view its transaction graph</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-8 h-full flex flex-col">
+    <div className="p-8 h-full flex flex-col" style={{ backgroundColor: '#000000' }}>
       <div className="mb-6">
-        <h2 className="text-3xl font-bold text-slate-100 mb-2">Graph Analysis</h2>
-        <p className="text-slate-400">Interactive visualization of wallet transactions</p>
+        <h2 className="text-3xl font-bold text-white mb-2">Graph Analysis</h2>
+        <p className="text-gray-400">Interactive visualization of wallet transactions</p>
       </div>
 
-      <div className="bg-slate-900 rounded-lg border border-slate-800 p-4 mb-4">
+      {/* Legend */}
+      <div
+        className="rounded-lg p-4 mb-4"
+        style={{ backgroundColor: '#0d0d0d', border: '1px solid #2a2a2a' }}
+      >
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-cyan-400 border-2 border-cyan-300" />
-            <span className="text-sm text-slate-300">Target Wallet</span>
+            <div className="w-4 h-4 rounded-full bg-white border-2 border-gray-300" />
+            <span className="text-sm text-gray-300">Target Wallet</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-red-500 border-2 border-red-400" />
-            <span className="text-sm text-slate-300">Suspicious Wallet</span>
+            <div className="w-4 h-4 rounded-full border-2" style={{ backgroundColor: '#dc2626', borderColor: '#ef4444' }} />
+            <span className="text-sm text-gray-300">Suspicious Wallet</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-slate-500 border-2 border-slate-400" />
-            <span className="text-sm text-slate-300">Normal Wallet</span>
+            <div className="w-4 h-4 rounded-full border-2" style={{ backgroundColor: '#1a1a1a', borderColor: '#555555' }} />
+            <span className="text-sm text-gray-300">Normal Wallet</span>
           </div>
-          <div className="ml-auto text-xs text-slate-500">
+          <div className="ml-auto text-xs text-gray-500">
             {walletData.graph.nodes.length} nodes, {walletData.graph.edges.length} edges
           </div>
         </div>
       </div>
 
-      <div className="flex-1 bg-slate-900 rounded-lg border border-slate-800 overflow-hidden">
-        <div ref={cyRef} className="w-full h-full" />
+      {/* Graph Canvas */}
+      <div
+        className="flex-1 rounded-lg overflow-hidden"
+        style={{ backgroundColor: '#000000', border: '1px solid #2a2a2a' }}
+      >
+        <div ref={cyRef} className="w-full h-full" style={{ backgroundColor: '#000000' }} />
       </div>
 
+      {/* Alert */}
       {walletData.flags.length > 0 && (
-        <div className="mt-4 bg-slate-900 rounded-lg border border-slate-800 p-4">
+        <div
+          className="mt-4 rounded-lg p-4"
+          style={{ backgroundColor: '#0d0d0d', border: '1px solid #2a2a2a' }}
+        >
           <div className="flex items-center gap-2 text-yellow-400 mb-2">
             <AlertCircle className="w-4 h-4" />
             <span className="text-sm font-medium">Suspicious nodes detected in graph</span>
           </div>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-gray-500">
             Red nodes indicate wallets flagged for suspicious activity
           </p>
         </div>

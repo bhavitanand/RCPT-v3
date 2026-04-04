@@ -1,40 +1,75 @@
 import { useState } from 'react';
 import axios from 'axios';
-import { Search, TrendingUp, TrendingDown, Activity, Loader2, AlertCircle } from 'lucide-react';
-import { WalletData, Flag } from '../types';
+import { Search, Activity, Loader2, AlertCircle, ShieldAlert } from 'lucide-react';
+import { WalletData, Flag, RiskProfile } from '../types';
 
 interface DashboardProps {
-  walletData: WalletData | null;
-  setWalletData: (data: WalletData | null) => void;
-  searchedAddress: string;
+  walletData:         WalletData | null;
+  setWalletData:      (data: WalletData | null) => void;
+  searchedAddress:    string;
   setSearchedAddress: (address: string) => void;
 }
 
-interface GroupedFlag {
-  type: string;
-  count: number;
-  severity: 'HIGH' | 'MEDIUM' | 'LOW';
+// ─── severity helpers ────────────────────────────────────────────────────────
+const SEVERITY_STYLE: Record<string, React.CSSProperties> = {
+  HIGH:   { backgroundColor: 'rgba(220,38,38,0.15)',  color: '#ef4444', border: '1px solid rgba(220,38,38,0.3)'  },
+  MEDIUM: { backgroundColor: 'rgba(249,115,22,0.15)', color: '#f97316', border: '1px solid rgba(249,115,22,0.3)' },
+  LOW:    { backgroundColor: 'rgba(234,179,8,0.15)',  color: '#eab308', border: '1px solid rgba(234,179,8,0.3)'  },
+};
+
+const SCORE_COLOR = (score: number) =>
+  score >= 70 ? '#ef4444' : score >= 40 ? '#f97316' : '#eab308';
+
+const FLAG_LABELS: Record<string, string> = {
+  splitting:    'Splitting',
+  chaining:     'Chaining',
+  large:        'Large Transfer',
+  velocity:     'High Velocity',
+  round_amount: 'Round Amount',
+};
+
+// ─── risk score ring ─────────────────────────────────────────────────────────
+function RiskRing({ score }: { score: number }) {
+  const r   = 36;
+  const circ = 2 * Math.PI * r;
+  const fill = circ - (score / 100) * circ;
+  const col  = SCORE_COLOR(score);
+
+  return (
+    <div className="relative w-24 h-24 flex items-center justify-center">
+      <svg width="96" height="96" style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx="48" cy="48" r={r} fill="none" stroke="#1e1e1e" strokeWidth="8" />
+        <circle
+          cx="48" cy="48" r={r} fill="none"
+          stroke={col} strokeWidth="8"
+          strokeDasharray={circ}
+          strokeDashoffset={fill}
+          strokeLinecap="round"
+          style={{ transition: 'stroke-dashoffset 0.6s ease' }}
+        />
+      </svg>
+      <span className="absolute text-2xl font-bold" style={{ color: col }}>{score}</span>
+    </div>
+  );
 }
 
-export default function Dashboard({ walletData, setWalletData, searchedAddress, setSearchedAddress }: DashboardProps) {
+// ─── component ───────────────────────────────────────────────────────────────
+export default function Dashboard({
+  walletData, setWalletData, searchedAddress, setSearchedAddress,
+}: DashboardProps) {
   const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error,   setError  ] = useState('');
 
   const handleSearch = async () => {
-    if (!address.trim()) {
-      setError('Please enter a wallet address');
-      return;
-    }
-
+    if (!address.trim()) { setError('Please enter a wallet address'); return; }
     setLoading(true);
     setError('');
-
     try {
       const response = await axios.get<WalletData>(`http://localhost:5000/wallet/${address}`);
       setWalletData(response.data);
       setSearchedAddress(address);
-    } catch (err) {
+    } catch {
       setError('Failed to fetch wallet data. Please check the address and try again.');
       setWalletData(null);
     } finally {
@@ -42,207 +77,248 @@ export default function Dashboard({ walletData, setWalletData, searchedAddress, 
     }
   };
 
-  const calculateRiskScore = (flags: Flag[]): number => {
-    const score = flags.length * 10;
-    return Math.min(score, 100);
-  };
+  // Highest risk score across all profiles
+  const topScore = walletData?.profiles?.length
+    ? Math.max(...walletData.profiles.map(p => p.riskScore))
+    : 0;
 
-  const getRiskLevel = (score: number): { label: string; color: string } => {
-    if (score <= 30) return { label: 'Low Risk', color: 'text-success' };
-    if (score <= 60) return { label: 'Medium Risk', color: 'text-warning' };
-    return { label: 'High Risk', color: 'text-danger' };
-  };
+  const topSeverity = topScore >= 70 ? 'HIGH' : topScore >= 40 ? 'MEDIUM' : 'LOW';
 
   const generateInsights = (data: WalletData): string[] => {
     const insights: string[] = [];
-    const { stats, flags, transactions } = data;
+    const types = new Set(data.flags.map(f => f.type));
 
-    if (flags.some(f => f.type === 'splitting')) {
-      insights.push('Wallet is distributing funds across multiple addresses');
-    }
+    if (types.has('splitting'))    insights.push('Wallet distributes funds across many addresses within short time windows');
+    if (types.has('chaining'))     insights.push('Rapid fund-forwarding detected — classic layering behaviour');
+    if (types.has('large'))        insights.push('High-value transactions observed — potential cash-out flow');
+    if (types.has('velocity'))     insights.push('Unusually high transaction frequency — automated wallet suspected');
+    if (types.has('round_amount')) insights.push('Round ETH amounts used — known structuring / laundering signal');
 
-    if (flags.some(f => f.type === 'chaining')) {
-      insights.push('Potential laundering pattern detected');
-    }
-
-    if (flags.some(f => f.type === 'large')) {
-      insights.push('High-value transactions observed');
-    }
-
-    if (stats.totalSent > stats.totalReceived * 0.9) {
-      insights.push('Behavior resembles ransomware cash-out flow');
-    }
-
-    if (transactions.length > 50) {
-      insights.push('High transaction volume detected');
-    }
-
-    if (insights.length === 0) {
+    if (data.stats.totalSent > data.stats.totalReceived * 0.9)
+      insights.push('Outflow dominates — behaviour consistent with ransomware disbursement');
+    if (data.stats.txCount > 50)
+      insights.push('High overall transaction volume');
+    if (insights.length === 0)
       insights.push('No significant suspicious patterns detected');
-    }
 
     return insights;
   };
 
-  const groupFlags = (flags: Flag[]): GroupedFlag[] => {
-    const grouped = flags.reduce((acc, flag) => {
-      if (!acc[flag.type]) {
-        acc[flag.type] = { count: 0, flags: [] };
-      }
-      acc[flag.type].count++;
-      acc[flag.type].flags.push(flag);
-      return acc;
-    }, {} as Record<string, { count: number; flags: Flag[] }>);
-
-    return Object.entries(grouped).map(([type, data]) => ({
-      type,
-      count: data.count,
-      severity: type === 'large' ? 'HIGH' : type === 'chaining' ? 'MEDIUM' : 'LOW',
-    }));
-  };
-
-  const getSeverityColor = (severity: string): string => {
-    switch (severity) {
-      case 'HIGH': return 'bg-danger/20 text-danger border-danger/30';
-      case 'MEDIUM': return 'bg-warning/20 text-warning border-warning/30';
-      case 'LOW': return 'bg-secondary/20 text-secondary border-secondary/30';
-      default: return 'bg-border/20 text-secondary border-border/30';
-    }
-  };
-
-  const riskScore = walletData ? calculateRiskScore(walletData.flags) : 0;
-  const riskLevel = getRiskLevel(riskScore);
+  // Deduplicate flags by type for the summary panel
+  const uniqueFlagTypes = walletData
+    ? Array.from(new Map(walletData.flags.map(f => [f.type, f])).values())
+    : [];
 
   return (
-    <div className="p-8">
+    <div className="p-8" style={{ backgroundColor: '#000000', minHeight: '100%' }}>
 
+      {/* Header */}
       <div className="mb-8">
-        <h2 className="text-3xl font-bold text-primary mb-2">Investigation Dashboard</h2>
-        <p className="text-secondary">Blockchain forensics and ransomware payment tracking</p>
+        <h2 className="text-3xl font-bold mb-2" style={{ color: '#ffffff' }}>Investigation Dashboard</h2>
+        <p style={{ color: '#888888' }}>Blockchain forensics and ransomware payment tracking</p>
       </div>
 
-      <div className="bg-card rounded-lg border border-border p-6 mb-6">
-        <label className="block text-sm font-medium text-secondary mb-3">Wallet Address</label>
+      {/* Search */}
+      <div className="rounded-lg p-6 mb-6" style={{ backgroundColor: '#0d0d0d', border: '1px solid #2a2a2a' }}>
+        <label className="block text-sm font-medium mb-3" style={{ color: '#888888' }}>Wallet Address</label>
         <div className="flex gap-3">
           <input
             type="text"
             value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-            placeholder="Enter wallet address (e.g., 0x123...)"
-            className="flex-1 bg-[#1a1a1a] border border-border rounded-lg px-4 py-3 text-primary placeholder-secondary focus:outline-none focus:border-border"
+            onChange={e => setAddress(e.target.value)}
+            onKeyPress={e => e.key === 'Enter' && handleSearch()}
+            placeholder="Enter wallet address (e.g. 0x123...)"
+            style={{
+              flex: 1, backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a',
+              borderRadius: '8px', padding: '12px 16px',
+              color: '#ffffff', outline: 'none',
+            }}
           />
           <button
             onClick={handleSearch}
             disabled={loading}
-            className="bg-primary text-black px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors hover:bg-gray-300 disabled:bg-border"
+            style={{
+              backgroundColor: loading ? '#2a2a2a' : '#ffffff',
+              color: '#000000', padding: '12px 24px',
+              borderRadius: '8px', fontWeight: 600,
+              display: 'flex', alignItems: 'center', gap: '8px',
+              cursor: loading ? 'not-allowed' : 'pointer', border: 'none',
+            }}
           >
-            {loading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Analyzing...
-              </>
-            ) : (
-              <>
-                <Search className="w-5 h-5" />
-                Analyze
-              </>
-            )}
+            {loading ? <><Loader2 className="w-5 h-5 animate-spin" />Analyzing...</> : <><Search className="w-5 h-5" />Analyze</>}
           </button>
         </div>
         {error && (
-          <div className="mt-3 text-danger text-sm flex items-center gap-2">
-            <AlertCircle className="w-4 h-4" />
-            {error}
+          <div className="mt-3 text-sm flex items-center gap-2" style={{ color: '#ef4444' }}>
+            <AlertCircle className="w-4 h-4" />{error}
           </div>
         )}
       </div>
 
+      {/* Empty state */}
       {!walletData && !loading && (
         <div className="text-center py-20">
-          <Search className="w-16 h-16 text-secondary mx-auto mb-4" />
-          <h3 className="text-xl font-medium text-secondary mb-2">Enter a wallet address to begin analysis</h3>
-          <p className="text-secondary">Investigate blockchain transactions and detect suspicious patterns</p>
+          <Search className="w-16 h-16 mx-auto mb-4" style={{ color: '#333333' }} />
+          <h3 className="text-xl font-medium mb-2" style={{ color: '#aaaaaa' }}>Enter a wallet address to begin analysis</h3>
+          <p style={{ color: '#666666' }}>Investigate blockchain transactions and detect suspicious patterns</p>
         </div>
       )}
 
       {walletData && (
         <div className="space-y-6">
 
+          {/* ── Stat cards ── */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
 
-            <div className="bg-card rounded-lg border border-border p-6">
-              <span className="text-secondary text-sm font-medium">Risk Score</span>
-              <div className={`text-4xl font-bold ${riskLevel.color} mt-2`}>{riskScore}</div>
-              <div className="mt-2 text-xs">{riskLevel.label}</div>
+            {/* Risk score card with ring */}
+            <div className="rounded-lg p-6 flex flex-col items-center justify-center"
+              style={{ backgroundColor: '#0d0d0d', border: `1px solid ${SCORE_COLOR(topScore)}44` }}>
+              <span className="text-sm font-medium mb-3" style={{ color: '#888888' }}>Risk Score</span>
+              <RiskRing score={topScore} />
+              <div
+                className="mt-3 px-3 py-1 rounded text-xs font-bold tracking-wider"
+                style={SEVERITY_STYLE[topSeverity]}
+              >
+                {topSeverity} RISK
+              </div>
             </div>
 
-            <div className="bg-card rounded-lg border border-border p-6">
-              <span className="text-secondary text-sm font-medium">Total Sent</span>
-              <div className="text-3xl font-bold text-warning mt-2">{walletData.stats.totalSent.toFixed(4)}</div>
-              <div className="text-xs text-secondary mt-1">ETH</div>
+            <div className="rounded-lg p-6" style={{ backgroundColor: '#0d0d0d', border: '1px solid #2a2a2a' }}>
+              <span className="text-sm font-medium" style={{ color: '#888888' }}>Total Sent</span>
+              <div className="text-3xl font-bold mt-2" style={{ color: '#f97316' }}>
+                {walletData.stats.totalSent.toFixed(4)}
+              </div>
+              <div className="text-xs mt-1" style={{ color: '#555555' }}>ETH</div>
             </div>
 
-            <div className="bg-card rounded-lg border border-border p-6">
-              <span className="text-secondary text-sm font-medium">Total Received</span>
-              <div className="text-3xl font-bold text-success mt-2">{walletData.stats.totalReceived.toFixed(4)}</div>
-              <div className="text-xs text-secondary mt-1">ETH</div>
+            <div className="rounded-lg p-6" style={{ backgroundColor: '#0d0d0d', border: '1px solid #2a2a2a' }}>
+              <span className="text-sm font-medium" style={{ color: '#888888' }}>Total Received</span>
+              <div className="text-3xl font-bold mt-2" style={{ color: '#ffffff' }}>
+                {walletData.stats.totalReceived.toFixed(4)}
+              </div>
+              <div className="text-xs mt-1" style={{ color: '#555555' }}>ETH</div>
             </div>
 
-            <div className="bg-card rounded-lg border border-border p-6">
-              <span className="text-secondary text-sm font-medium">Transaction Count</span>
-              <div className="text-3xl font-bold text-primary mt-2">{walletData.stats.txCount}</div>
-              <div className="text-xs text-secondary mt-1">Total transactions</div>
+            <div className="rounded-lg p-6" style={{ backgroundColor: '#0d0d0d', border: '1px solid #2a2a2a' }}>
+              <span className="text-sm font-medium" style={{ color: '#888888' }}>Transaction Count</span>
+              <div className="text-3xl font-bold mt-2" style={{ color: '#ffffff' }}>
+                {walletData.stats.txCount}
+              </div>
+              <div className="text-xs mt-1" style={{ color: '#555555' }}>Total transactions</div>
             </div>
 
           </div>
 
+          {/* ── Insights + Suspicious activity ── */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-            <div className="bg-card rounded-lg border border-border p-6">
-              <h3 className="text-lg font-semibold text-primary mb-4">Investigation Insights</h3>
+            <div className="rounded-lg p-6" style={{ backgroundColor: '#0d0d0d', border: '1px solid #2a2a2a' }}>
+              <h3 className="text-lg font-semibold mb-4" style={{ color: '#ffffff' }}>Investigation Insights</h3>
               <div className="space-y-3">
-                {generateInsights(walletData).map((insight, index) => (
-                  <div key={index} className="flex items-start gap-3 text-secondary">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
-                    <span className="text-sm">{insight}</span>
+                {generateInsights(walletData).map((insight, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <div className="w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0" style={{ backgroundColor: '#555555' }} />
+                    <span className="text-sm" style={{ color: '#aaaaaa' }}>{insight}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="bg-card rounded-lg border border-border p-6">
-              <h3 className="text-lg font-semibold text-primary mb-4">Suspicious Activity</h3>
+            <div className="rounded-lg p-6" style={{ backgroundColor: '#0d0d0d', border: '1px solid #2a2a2a' }}>
+              <h3 className="text-lg font-semibold mb-4" style={{ color: '#ffffff' }}>Suspicious Activity</h3>
 
-              {walletData.flags.length === 0 ? (
-                <p className="text-secondary text-sm">No suspicious activity detected</p>
+              {uniqueFlagTypes.length === 0 ? (
+                <p className="text-sm" style={{ color: '#555555' }}>No suspicious activity detected</p>
               ) : (
                 <div className="space-y-3">
-                  {groupFlags(walletData.flags).map((flag, index) => (
-                    <div key={index} className="flex items-center justify-between">
+                  {uniqueFlagTypes.map((flag, i) => (
+                    <div key={i} className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <AlertCircle className="w-5 h-5 text-danger" />
+                        <ShieldAlert className="w-5 h-5 flex-shrink-0" style={{ color: '#ef4444' }} />
                         <div>
-                          <div className="text-sm font-medium text-primary capitalize">
-                            {flag.type} detected
+                          <div className="text-sm font-medium" style={{ color: '#dddddd' }}>
+                            {FLAG_LABELS[flag.type] || flag.type} detected
                           </div>
-                          <div className="text-xs text-secondary">
-                            {flag.count} occurrence{flag.count > 1 ? 's' : ''}
+                          <div className="text-xs mt-0.5" style={{ color: '#666666' }}>
+                            {flag.detail}
                           </div>
                         </div>
                       </div>
-
-                      <div className={`px-3 py-1 rounded border text-xs font-medium ${getSeverityColor(flag.severity)}`}>
+                      <div
+                        className="ml-4 flex-shrink-0 px-2 py-1 rounded text-xs font-bold tracking-wider"
+                        style={SEVERITY_STYLE[flag.severity]}
+                      >
                         {flag.severity}
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-
             </div>
 
           </div>
+
+          {/* ── Per-wallet risk profiles ── */}
+          {walletData.profiles && walletData.profiles.length > 0 && (
+            <div className="rounded-lg p-6" style={{ backgroundColor: '#0d0d0d', border: '1px solid #2a2a2a' }}>
+              <div className="flex items-center gap-2 mb-4">
+                <Activity className="w-5 h-5" style={{ color: '#3b82f6' }} />
+                <h3 className="text-lg font-semibold" style={{ color: '#ffffff' }}>Wallet Risk Profiles</h3>
+              </div>
+
+              <div className="space-y-3">
+                {walletData.profiles
+                  .sort((a, b) => b.riskScore - a.riskScore)
+                  .map((profile, i) => (
+                    <div
+                      key={i}
+                      className="rounded-lg p-4"
+                      style={{ backgroundColor: '#141414', border: '1px solid #2a2a2a' }}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <code className="text-sm px-2 py-0.5 rounded" style={{ backgroundColor: '#1a1a1a', color: '#cccccc' }}>
+                          {profile.wallet.slice(0, 6)}...{profile.wallet.slice(-4)}
+                        </code>
+                        <div className="flex items-center gap-3">
+                          {/* mini score bar */}
+                          <div className="w-24 h-1.5 rounded-full" style={{ backgroundColor: '#2a2a2a' }}>
+                            <div
+                              className="h-1.5 rounded-full"
+                              style={{
+                                width: `${profile.riskScore}%`,
+                                backgroundColor: SCORE_COLOR(profile.riskScore),
+                                transition: 'width 0.5s ease',
+                              }}
+                            />
+                          </div>
+                          <span className="text-sm font-bold w-8 text-right" style={{ color: SCORE_COLOR(profile.riskScore) }}>
+                            {profile.riskScore}
+                          </span>
+                          <div
+                            className="px-2 py-0.5 rounded text-xs font-bold tracking-wider"
+                            style={SEVERITY_STYLE[profile.severity]}
+                          >
+                            {profile.severity}
+                          </div>
+                        </div>
+                      </div>
+                      {/* flag chips */}
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {profile.flags.map((f, j) => (
+                          <span
+                            key={j}
+                            className="text-xs px-2 py-0.5 rounded"
+                            style={{ backgroundColor: '#1a1a1a', color: '#888888', border: '1px solid #2a2a2a' }}
+                          >
+                            {FLAG_LABELS[f.type] || f.type}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
 
         </div>
       )}

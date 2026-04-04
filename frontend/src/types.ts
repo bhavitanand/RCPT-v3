@@ -27,17 +27,30 @@ export interface Transaction {
   timestamp: string;
 }
 
-export type FlagType = 'splitting' | 'chaining' | 'large';
+export type FlagType = 'splitting' | 'chaining' | 'large' | 'velocity' | 'round_amount';
+
+export type Severity = 'HIGH' | 'MEDIUM' | 'LOW';
 
 export interface Flag {
-  type: FlagType;
-  wallet: string;
-  amount?: number;
+  type:      FlagType;
+  wallet:    string;
+  riskScore: number;   // 0–100 wallet-level score
+  severity:  Severity;
+  detail:    string;   // human-readable explanation
+  amount?:   number;
+}
+
+export interface RiskProfile {
+  wallet:    string;
+  riskScore: number;
+  severity:  Severity;
+  flags:     Omit<Flag, 'wallet' | 'riskScore' | 'severity'>[];
 }
 
 export interface WalletData {
-  stats: WalletStats;
-  graph: Graph;
+  stats:        WalletStats;
+  graph:        Graph;
   transactions: Transaction[];
-  flags: Flag[];
+  flags:        Flag[];
+  profiles:     RiskProfile[];
 }
