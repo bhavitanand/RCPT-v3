@@ -1,4 +1,4 @@
-# Ransomware Crypto Payments Tracker
+# Ransomware Crypto Payment Tracker
 
 ### Blockchain Forensics & Transaction Analysis Dashboard
 
@@ -185,7 +185,7 @@ Create a `.env` file in the root directory:
 ETHERSCAN_API_KEY=your_api_key_here
 ```
 
-> Get a free key at [etherscan.io/apis](https://etherscan.io/apis) — no credit card required.
+> Get a free key at [etherscan.io/apis](https://etherscan.io/apis).
 
 Start the server:
 
@@ -202,12 +202,6 @@ npm run dev
 ```
 
 Open `http://localhost:5173` in your browser.
-
----
-
-## Security Note
-
-Never commit your `.env` file. Ensure it is listed in `.gitignore`. When deploying, set `ETHERSCAN_API_KEY` as an environment variable directly on your hosting platform (Render, Railway, etc.).
 
 ---
 
