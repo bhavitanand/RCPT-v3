@@ -77,20 +77,6 @@ function App() {
           ))}
         </nav>
 
-        {/* Footer Status */}
-        <div className="p-4 border-t border-border">
-          <div className="text-xs text-secondary">
-            <div className="flex justify-between mb-1">
-              <span>Status</span>
-              <span className="text-success">● Online</span>
-            </div>
-            <div className="flex justify-between">
-              <span>API</span>
-              <span className="text-primary">localhost:5000</span>
-            </div>
-          </div>
-        </div>
-
       </div>
 
       {/* Main Content */}
