@@ -6,7 +6,7 @@
 
 | Area | v2 | v3 |
 |---|---|---|
-| Look and feel | Dark dashboard | Light, ETAP-style experience: guided report, animated explainer, hover glossary, Learn page |
+| Look and feel | Dark and boring dashboard | Light theme and interactive experience: guided report, animated explainer, hover glossary, Learn page |
 | Networks | Ethereum only | Ethereum, BNB Chain, Polygon, Arbitrum, Optimism, Base, **Bitcoin, Solana, Tron** (incl. USDT-TRC20 and ERC-20 tokens) |
 | Explanations | Hard-coded sentences | **Gemini** writes a story, meaning and next steps (Simple or Analyst); offline explainer when no key; grounded follow-up chat |
 | Detection | 5 rules summed | 14 signals combined with noisy-OR, each with plain text and **tx-hash evidence**; watchlist labels; downstream tracing; peel chains |
