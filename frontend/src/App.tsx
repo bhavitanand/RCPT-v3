@@ -1,105 +1,53 @@
-import { useState } from 'react';
-import { Shield, Network, List, AlertTriangle } from 'lucide-react';
-import Dashboard from './components/Dashboard';
-import GraphAnalysis from './components/GraphAnalysis';
-import Transactions from './components/Transactions';
-import ThreatAnalysis from './components/ThreatAnalysis';
-import { WalletData } from './types';
+import { BookOpen, Bookmark, Activity, ListChecks, Search } from 'lucide-react';
+import BatchPage from './pages/BatchPage';
+import { go, useCases, useRoute } from './store';
+import HomePage from './pages/HomePage';
+import ReportPage from './pages/ReportPage';
+import CasesPage from './pages/CasesPage';
+import LearnPage from './pages/LearnPage';
+import StatusPage from './pages/StatusPage';
 
-type Page = 'dashboard' | 'graph' | 'transactions' | 'threats';
-
-function App() {
-  const [currentPage, setCurrentPage] = useState<Page>('dashboard');
-  const [walletData, setWalletData] = useState<WalletData | null>(null);
-  const [searchedAddress, setSearchedAddress] = useState<string>('');
-
-  const navigationItems = [
-    { id: 'dashboard' as Page, label: 'Dashboard', icon: Shield },
-    { id: 'graph' as Page, label: 'Graph Analysis', icon: Network },
-    { id: 'transactions' as Page, label: 'Transactions', icon: List },
-    { id: 'threats' as Page, label: 'Threat Analysis', icon: AlertTriangle },
+export default function App() {
+  const route = useRoute();
+  const { cases } = useCases();
+  const nav = [
+    { id: 'home' as const, label: 'Trace', icon: Search },
+    { id: 'batch' as const, label: 'Batch', icon: ListChecks },
+    { id: 'cases' as const, label: 'Cases', icon: Bookmark, badge: cases.length || undefined },
+    { id: 'learn' as const, label: 'Learn', icon: BookOpen },
+    { id: 'status' as const, label: 'Status', icon: Activity },
   ];
-
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'dashboard':
-        return (
-          <Dashboard
-            walletData={walletData}
-            setWalletData={setWalletData}
-            searchedAddress={searchedAddress}
-            setSearchedAddress={setSearchedAddress}
-          />
-        );
-      case 'graph':
-        return <GraphAnalysis walletData={walletData} searchedAddress={searchedAddress} />;
-      case 'transactions':
-        return <Transactions walletData={walletData} searchedAddress={searchedAddress} />;
-      case 'threats':
-        return <ThreatAnalysis walletData={walletData} />;
-      default:
-        return null;
-    }
-  };
+  const active = route.page === 'report' ? 'home' : route.page;
 
   return (
-    <div className="flex h-screen bg-bg">
-
-      {/* Sidebar */}
-      <div className="w-64 bg-card border-r border-border flex flex-col">
-
-        {/* Logo / Title */}
-        <div className="p-6 border-b border-border text-center">
-          <div className="flex justify-center mb-2">
-            <Shield className="w-6 h-6 text-primary" />
-          </div>
-
-          <h1 className="text-base font-bold text-primary">
-            Ransomware Crypto Payments Tracker
-          </h1>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 p-4">
-          {navigationItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setCurrentPage(item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 mb-2 rounded-lg transition-all ${
-                currentPage === item.id
-                  ? 'bg-[#1a1a1a] text-primary border border-border'
-                  : 'text-secondary hover:bg-[#1a1a1a] hover:text-primary'
-              }`}
-            >
-              <item.icon className="w-5 h-5" />
-              <span className="font-medium">{item.label}</span>
+    <div className="app">
+      <a className="skip" href="#main">Skip to content</a>
+      <header className="topbar">
+        <button className="brand" onClick={() => go('home')} aria-label="RCPT home">
+          <img src="/logo.png" alt="" width={28} height={28} />
+          <span>RCPT</span>
+          <small>Ransomware Crypto Payment Tracker</small>
+        </button>
+        <nav aria-label="Main">
+          {nav.map(n => (
+            <button key={n.id} className={active === n.id ? 'on' : ''} onClick={() => go(n.id)} aria-current={active === n.id ? 'page' : undefined}>
+              <n.icon size={16} /> <span>{n.label}</span>
+              {n.badge && <b className="count">{n.badge}</b>}
             </button>
           ))}
         </nav>
-
-        {/* Footer Status */}
-        <div className="p-4 border-t border-border">
-          <div className="text-xs text-secondary">
-            <div className="flex justify-between mb-1">
-              <span>Status</span>
-              <span className="text-success">● Online</span>
-            </div>
-            <div className="flex justify-between">
-              <span>API</span>
-              <span className="text-primary">localhost:5000</span>
-            </div>
-          </div>
-        </div>
-
+      </header>
+      <div id="main">
+        {route.page === 'home' && <HomePage />}
+        {route.page === 'report' && <ReportPage params={route.params} />}
+        {route.page === 'batch' && <BatchPage />}
+        {route.page === 'cases' && <CasesPage />}
+        {route.page === 'learn' && <LearnPage />}
+        {route.page === 'status' && <StatusPage />}
       </div>
-
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        {renderPage()}
-      </div>
-
+      <footer className="footer">
+        <span>RCPT v3 · read-only analysis of public blockchain data · for education and research</span>
+      </footer>
     </div>
   );
 }
-
-export default App;

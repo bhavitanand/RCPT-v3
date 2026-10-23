@@ -1,0 +1,17 @@
+# secrets - never commit
+.env
+.env.*
+!.env.example
+
+# dependencies and build output
+node_modules/
+dist/
+dist-ssr/
+
+# runtime caches and local tooling
+backend/data/cache/
+.claude/
+*.log
+.DS_Store
+.vscode/
+.idea/
